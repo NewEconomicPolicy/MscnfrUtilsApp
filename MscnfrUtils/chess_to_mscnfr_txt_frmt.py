@@ -207,9 +207,11 @@ def read_chess_nc_write_meteo_csv(form):
     """
     process NCs for required metrics only
     """
-    meteogrid_only = True
+    meteogrid_only = False
     if meteogrid_only:
         rqrd_metrics = RQRD_METRICS[:1]
+    else:
+        rqrd_metrics = RQRD_METRICS
 
     nc_fnames_hist = {}
     for nc_fname in glob(form.settings['chess_hist'] + '/*.nc'):
