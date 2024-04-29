@@ -40,6 +40,7 @@ def initiation(form):
     # =================
     form.settings = _read_setup_file(PROGRAM_ID)
     set_up_logging(form, PROGRAM_ID)
+    print('\nWill write logfile to: ' + form.lgr.handlers[0].baseFilename)
 
     return
 

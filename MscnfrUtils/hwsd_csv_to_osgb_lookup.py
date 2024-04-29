@@ -23,7 +23,6 @@ from mscnfr_osgb_fns import open_file_sets_osgb, write_mscnfr_out
 
 ERROR_STR = '*** Error *** '
 
-GRID_RESOL = 0.0083333
 numSecsDay = 3600*24
 
 HWSD_CSV_FNAME = 'E:\\GlobalEcosseData\\Hwsd_CSVs\\UK\\vault\\Wales_hwsd.csv'

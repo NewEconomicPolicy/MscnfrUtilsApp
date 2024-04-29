@@ -193,7 +193,8 @@ class Form(QWidget):
         # =======
         w_dummy = QCheckBox('Dummy run')
         w_dummy.setChecked(True)
-        helpText = 'No output will be written'
+        helpText = 'Applies to writeMergePt2: No output will be written\n\t'
+        helpText += 'and CSVs from CHESS: write meteogrid and one metric file only'
         w_dummy.setToolTip(helpText)
         grid.addWidget(w_dummy, irow, 2)
         self.w_dummy = w_dummy
@@ -333,10 +334,6 @@ class Form(QWidget):
         w_exit = QPushButton("Exit", self)
         w_exit.clicked.connect(self.exitClicked)
         grid.addWidget(w_exit, irow, 6)
-
-        #============================================
-        irow == 1
-
 
         # reads and set values from last run
         # ==================================
