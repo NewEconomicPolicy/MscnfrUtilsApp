@@ -18,6 +18,8 @@ from time import time
 from glob import glob
 from calendar import monthrange
 
+from warnings import filterwarnings
+
 from math import exp
 from pandas import DataFrame, read_csv
 from netCDF4 import Dataset
@@ -48,6 +50,8 @@ SCENARIOS = ['rcp26']
 REALISATIONS = ['01', '04', '06', '15']
 REALISATIONS = ['01']
 
+NSEARCH_PTS = 1     # do not exceed maximum of 9 in function _fetch_valid_hist_rcp_data
+
 MSCNFR_FLD_WDTH = 8
 YR_BLOCK_LNGTH = MSCNFR_FLD_WDTH*12
 FRMT_STR = '{:' + str(MSCNFR_FLD_WDTH) + 'd}'
@@ -77,7 +81,7 @@ def _fetch_valid_hist_rcp_data(lggr, vals_hist_all, vals_rcp_all, metric, pettmp
     vals_hist = None
     vals_rcp = None
 
-    for ic in range(9):
+    for ic in range(NSEARCH_PTS):
         valid_data_flag = True
         yindex = yindx + ydsp[ic]
         xindex = xindx + xdsp[ic]
@@ -95,13 +99,18 @@ def _fetch_valid_hist_rcp_data(lggr, vals_hist_all, vals_rcp_all, metric, pettmp
         if valid_data_flag:
             break
 
-    if vals_hist is None:
-        pettmp[metric] = []
-    else:
-        pettmp[metric] = [float(val) for val in vals_hist]
+    pettmp[metric] = []
+    if vals_hist is not None:
+        try:
+            pettmp[metric] = [float(val) for val in vals_hist]
+        except UserWarning as warn:
+            valid_data_flag = False
 
     if vals_rcp is not None:
-        pettmp[metric] += [float(val) for val in vals_rcp]
+        try:
+            pettmp[metric] += [float(val) for val in vals_rcp]
+        except UserWarning as warn:
+            valid_data_flag = False
 
     if not valid_data_flag:
         mess = WARN_STR + 'No valid data for metric {}\tyindx, xindx: {}/{}'.format(metric, yindx, xindx)
@@ -155,6 +164,8 @@ def _make_meteo_csvs_from_chess(lggr, out_dir, nc_fnames_hist, nc_fnames_rcp, me
     """
     read y/x indices from lookup table
     """
+    filterwarnings("error")
+
     num_cells = len(meteo_df)
     num_cells_str = format_string("%d", num_cells, grouping=True)
     print('Coordinates mapping file has ' + num_cells_str + ' + records')
@@ -244,6 +255,7 @@ def _make_meteo_csvs_from_chess(lggr, out_dir, nc_fnames_hist, nc_fnames_rcp, me
 
         # stanza for relative humidity
         # ============================
+        # TODO: improve checking
         _relative_humidity_calc(pettmp)
         metric = 'hurs'
         if metric in pettmp:
@@ -252,6 +264,7 @@ def _make_meteo_csvs_from_chess(lggr, out_dir, nc_fnames_hist, nc_fnames_rcp, me
 
         # write data for this grid point
         # ==============================
+        # TODO: improve checking
         if len(pettmp) == nrqrd:
             _write_out_chess(writers, pettmp, yindx, xindx, lat, lon, bad_cells_list)
             num_set += 1
@@ -308,6 +321,9 @@ def read_chess_nc_write_meteo_csv(form):
     # OSGB file is CHESS_hwsd_lkup_tble.csv derived from BritishGrid_HWSD.xlsx
     # ========================================================================
     meteo_lat_lon_osgb_fn = form.settings['lat_lon_osgb']
+    if not isfile(meteo_lat_lon_osgb_fn):
+        print(ERROR_STR + 'Look up file ' + meteo_lat_lon_osgb_fn + ' must exist')
+        return
     try:
         meteo_df = read_csv(meteo_lat_lon_osgb_fn)
     except PermissionError as err:
