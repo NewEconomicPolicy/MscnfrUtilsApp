@@ -33,7 +33,7 @@ from mscnfr_osgb_fns import open_file_sets_osgb
 ERROR_STR = '*** Error *** '
 WARN_STR = '*** Warning *** '
 
-RQRD_METRICS = ['precip', 'hurs', 'huss', 'psurf', 'rsds', 'sfcWind', 'tasmax', 'tasmin', 'tas']
+RQRD_METRICS = ['precip', 'hurs', 'huss', 'psurf', 'rsds', 'sfcWind', 'tasmax', 'tasmin', 'tas']    # 9 taking
 
 KELVIN_TO_CENTIGRADE = -273.15
 TAS_METRICS = ['tasmax', 'tasmin', 'tas']   # temperature at surface
@@ -60,47 +60,62 @@ def _out_of_bounds_check(yindx, yindx_max, xindx, xindx_max, lat, lon):
         mess = ERROR_STR + 'meteo dataframe index out of bounds - lat, yindx, max: '
         mess += '{} {} {}\tlon, xindx, max: {} {} {}'.format(lat, yindx, yindx_max, lon, xindx, xindx_max)
         print('\n' + mess)
-        out_bounds_flag = True
+        out_of_bounds_flag = True
     else:
         out_of_bounds_flag = False
 
     return  out_of_bounds_flag
 
-def _fetch_valid_hist_rcp_data(vals_hist, vals_rcp, metric, pettmp, yindx, xindx, nbad_cells):
+def _fetch_valid_hist_rcp_data(lggr, vals_hist_all, vals_rcp_all, metric, pettmp, yindx, xindx, lat, lon):
     """
     try initial location and if no valid data, then look in neighbouring cells using the lookup table
     defined by ydsp and xdsp
     """
-    ydsp = [0,  0, 1,  0, -1, -1,  1, 1, -1]
-    xdsp = [0, -1, 0, -1,  0, -1, -1, 1,  1]
+    ydsp = [0,  0, 1, 0, -1, -1,  1, 1, -1]
+    xdsp = [0, -1, 0, 1,  0, -1, -1, 1,  1]
+
+    vals_hist = None
+    vals_rcp = None
 
     for ic in range(9):
         valid_data_flag = True
+        yindex = yindx + ydsp[ic]
+        xindex = xindx + xdsp[ic]
 
         if not metric == 'hurs':
-            vals_hist = vals_hist[:, yindx + ydsp[ic], xindx + xdsp[ic]]
+            vals_hist = vals_hist_all[:, yindex, xindex]
             if vals_hist[0] is MaskedConstant:
                 valid_data_flag = False
 
         if not metric == 'psurf':
-            vals_rcp = vals_rcp[:, yindx + ydsp[ic], xindx + xdsp[ic]]
+            vals_rcp = vals_rcp_all[:, yindex, xindex]
             if vals_rcp[0] is MaskedConstant:
                 valid_data_flag = False
 
         if valid_data_flag:
             break
 
-    pettmp[metric] = [float(val) for val in vals_hist]
-    pettmp[metric] = pettmp[metric] + [float(val) for val in vals_rcp]
+    if vals_hist is None:
+        pettmp[metric] = []
+    else:
+        pettmp[metric] = [float(val) for val in vals_hist]
+
+    if vals_rcp is not None:
+        pettmp[metric] += [float(val) for val in vals_rcp]
+
+    if not valid_data_flag:
+        mess = WARN_STR + 'No valid data for metric {}\tyindx, xindx: {}/{}'.format(metric, yindx, xindx)
+        mess += '\tlat, lon: {}/{}'.format(lat, lon)
+        lggr.info(mess)
 
     return valid_data_flag
 
-def _make_mess(bad_cells, metric, yindx, xindx, lat, lon, mess):
+def _make_bad_cell_mess(bad_cells_list, metric, yindx, xindx, lat, lon, mess):
     """
 
     """
     mess += 'metric {}\tyindx, xindx: {}/{}\tlat, lon: {}/{}'.format(metric, yindx, xindx, lat, lon)
-    bad_cells.append(mess)
+    bad_cells_list.append(mess)
     return
 
 def _relative_humidity_calc(pettmp, tref = 273.16):
@@ -168,6 +183,7 @@ def _make_meteo_csvs_from_chess(lggr, out_dir, nc_fnames_hist, nc_fnames_rcp, me
         '''
         if metric == 'hurs':    # no historic data for relative humidity
             t2 = time()
+            vals_hist_all[metric] = None
         else:
             t1 = time()
             nc_dset = Dataset(nc_fnames_hist[metric])
@@ -176,27 +192,27 @@ def _make_meteo_csvs_from_chess(lggr, out_dir, nc_fnames_hist, nc_fnames_rcp, me
 
             t2 = time()
             print('Read {} in {} secs'.format(nc_fnames_hist[metric], int(t2 - t1)))
-
         '''
         future weather
         ==============
-        historic finishes at last month of 2017 so we start RCP on first month of 2018
+        start RCP on first month of 2018 since historic finishes at last month of 2017 
         '''
         if metric == 'precip':
             var_name = 'pr'
-        elif metric == 'psurf':     # no RCP data for surface air pressure
-            continue
         else:
             var_name = metric
 
         # future weather
         # ==============
-        nc_dset_rcp = Dataset(nc_fnames_rcp[metric])
-        vals_rcp_all[metric] = nc_dset_rcp.variables[var_name][444:, :, :]
-        nc_dset_rcp.close()
+        if metric == 'psurf':  # no RCP data for surface air pressure
+            vals_rcp_all[metric] = None
+        else:
+            nc_dset_rcp = Dataset(nc_fnames_rcp[metric])
+            vals_rcp_all[metric] = nc_dset_rcp.variables[var_name][444:, :, :]
+            nc_dset_rcp.close()
 
-        t3 = time()
-        print('Read {} in {} secs'.format(split(nc_fnames_rcp[metric])[1], int(t3 - t2)))
+            t3 = time()
+            print('Read {} in {} secs'.format(split(nc_fnames_rcp[metric])[1], int(t3 - t2)))
 
     # main loop
     # =========
@@ -207,6 +223,7 @@ def _make_meteo_csvs_from_chess(lggr, out_dir, nc_fnames_hist, nc_fnames_rcp, me
     icount = 0      # counter for each value retrieved for all metrics
     last_time = time()
     nbad_cells = 0
+    bad_cells_list = []
     nmasked = 0
     for lat, lon, yindx, xindx in zip(meteo_df['cell_lat'], meteo_df['cell_lon'], meteo_df['yindx'], meteo_df['xindx']):
 
@@ -216,8 +233,10 @@ def _make_meteo_csvs_from_chess(lggr, out_dir, nc_fnames_hist, nc_fnames_rcp, me
         pettmp = {}
         for metric in rqrd_metrics:
 
-            valid_data_flag = _fetch_valid_hist_rcp_data(vals_hist_all[metric], vals_rcp_all[metric],
-                                                                            metric, pettmp, yindx, xindx, nbad_cells)
+            valid_data_flag = _fetch_valid_hist_rcp_data(lggr, vals_hist_all[metric], vals_rcp_all[metric],
+                                                                            metric, pettmp, yindx, xindx, lat, lon)
+            if not valid_data_flag:
+                nmasked += 1
 
             last_time = update_progress_chess(last_time, num_set, icount, nbad_cells, num_total,
                                                                                             round(lat,4), round(lon,4))
@@ -234,7 +253,7 @@ def _make_meteo_csvs_from_chess(lggr, out_dir, nc_fnames_hist, nc_fnames_rcp, me
         # write data for this grid point
         # ==============================
         if len(pettmp) == nrqrd:
-            _write_out_chess(writers, pettmp, yindx, xindx, lat, lon, nbad_cells)
+            _write_out_chess(writers, pettmp, yindx, xindx, lat, lon, bad_cells_list)
             num_set += 1
             if num_set >= max_cells:
                 break
@@ -311,15 +330,14 @@ def read_chess_nc_write_meteo_csv(form):
                 makedirs(out_dir_plus)
                 print('Created ' + out_dir_plus)
 
-            bad_cells = _make_meteo_csvs_from_chess(form.lgr, out_dir_plus, nc_fnames_hist, nc_fnames_rcp,
-                                                                                meteo_df, max_cells, rqrd_metrics)
-            # mess = ' N bad cells: '.format(len(bad_cells))
-            mess = ''
+            nbad_cells = _make_meteo_csvs_from_chess(form.lgr, out_dir_plus, nc_fnames_hist, nc_fnames_rcp,
+                                                                            meteo_df, max_cells, rqrd_metrics)
+            mess = '\tN bad cells: {}'.format(nbad_cells)
             print('Completed met files for scenario ' + scenario + ' realisation ' + realisation + mess)
 
     return
 
-def _write_out_chess(writers, pettmp, yindx, xindx, lat, lon, bad_cells):
+def _write_out_chess(writers, pettmp, yindx, xindx, lat, lon, bad_cells_list):
     """
     for this coordinate write each variable to a separate file
     metrics are passed as a list of real values which we convert to integers after times by 10
@@ -376,14 +394,14 @@ def _write_out_chess(writers, pettmp, yindx, xindx, lat, lon, bad_cells):
         try:
             newlist[metric] = [FRMT_STR.format(int(10.0 * val)) for val in out_rec]
         except ValueError as err:
-            _make_mess(bad_cells, metric, yindx, xindx, lat, lon, str(END_YEAR) + ' ' + str(err))
+            _make_bad_cell_mess(bad_cells_list, metric, yindx, xindx, lat, lon, str(END_YEAR) + ' ' + str(err))
             integrity_flag = False
             break
 
         try:
             recs[metric] = ''.join(newlist[metric])
         except TypeError or KeyError as err:
-            _make_mess(bad_cells, metric, yindx, xindx, lat, lon, END_YEAR + err)
+            _make_bad_cell_mess(bad_cells_list, metric, yindx, xindx, lat, lon, str(END_YEAR) + ' ' + str(err))
             integrity_flag = False
             break
 
