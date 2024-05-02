@@ -35,7 +35,8 @@ from mscnfr_osgb_fns import open_file_sets_osgb
 ERROR_STR = '*** Error *** '
 WARN_STR = '*** Warning *** '
 
-RQRD_METRICS = ['precip', 'hurs', 'huss', 'psurf', 'rsds', 'sfcWind', 'tasmax', 'tasmin', 'tas']    # 9 taking
+RQRD_METRICS = ['precip', 'hurs', 'huss', 'psurf', 'rsds', 'sfcWind', 'tasmax', 'tasmin', 'tas']    # 9
+RQRD_METRICS = ['hurs', 'huss', 'psurf', 'tas']
 
 KELVIN_TO_CENTIGRADE = -273.15
 TAS_METRICS = ['tasmax', 'tasmin', 'tas']   # temperature at surface
@@ -56,48 +57,27 @@ MSCNFR_FLD_WDTH = 8
 YR_BLOCK_LNGTH = MSCNFR_FLD_WDTH*12
 FRMT_STR = '{:' + str(MSCNFR_FLD_WDTH) + 'd}'
 
-def _out_of_bounds_check(yindx, yindx_max, xindx, xindx_max, lat, lon):
-    """
-
-    """
-    if yindx > yindx_max or xindx > xindx_max:
-        mess = ERROR_STR + 'meteo dataframe index out of bounds - lat, yindx, max: '
-        mess += '{} {} {}\tlon, xindx, max: {} {} {}'.format(lat, yindx, yindx_max, lon, xindx, xindx_max)
-        print('\n' + mess)
-        out_of_bounds_flag = True
-    else:
-        out_of_bounds_flag = False
-
-    return  out_of_bounds_flag
+filterwarnings("error")
 
 def _fetch_valid_hist_rcp_data(lggr, vals_hist_all, vals_rcp_all, metric, pettmp, yindx, xindx, lat, lon):
     """
-    try initial location and if no valid data, then look in neighbouring cells using the lookup table
-    defined by ydsp and xdsp
+    simplified version of _fetch_valid_hist_rcp_data_orig which searches in neighbouring cells if no data in
+    cell specified by yindx, xindx
     """
-    ydsp = [0,  0, 1, 0, -1, -1,  1, 1, -1]
-    xdsp = [0, -1, 0, 1,  0, -1, -1, 1,  1]
-
     vals_hist = None
     vals_rcp = None
 
-    for ic in range(NSEARCH_PTS):
-        valid_data_flag = True
-        yindex = yindx + ydsp[ic]
-        xindex = xindx + xdsp[ic]
+    valid_data_flag = True
 
-        if not metric == 'hurs':
-            vals_hist = vals_hist_all[:, yindex, xindex]
-            if vals_hist[0] is MaskedConstant:
-                valid_data_flag = False
+    if not metric == 'hurs':        # no hurs historic dataset
+        vals_hist = vals_hist_all[:, yindx, xindx]
+        if vals_hist[0] is MaskedConstant:
+            valid_data_flag = False
 
-        if not metric == 'psurf':
-            vals_rcp = vals_rcp_all[:, yindex, xindex]
-            if vals_rcp[0] is MaskedConstant:
-                valid_data_flag = False
-
-        if valid_data_flag:
-            break
+    if not metric == 'psurf':       # no psurf rcp dataset
+        vals_rcp = vals_rcp_all[:, yindx, xindx]
+        if vals_rcp[0] is MaskedConstant:
+            valid_data_flag = False
 
     pettmp[metric] = []
     if vals_hist is not None:
@@ -119,65 +99,19 @@ def _fetch_valid_hist_rcp_data(lggr, vals_hist_all, vals_rcp_all, metric, pettmp
 
     return valid_data_flag
 
-def _make_bad_cell_mess(bad_cells_list, metric, yindx, xindx, lat, lon, mess):
-    """
-
-    """
-    mess += 'metric {}\tyindx, xindx: {}/{}\tlat, lon: {}/{}'.format(metric, yindx, xindx, lat, lon)
-    bad_cells_list.append(mess)
-    return
-
-def _relative_humidity_calc(pettmp, tref = 273.16):
-    """
-    thanks to Jon Mccalmont <jon.mccalmont@abdn.ac.uk> for equation
-
-    spec_hum:   specific humidity (huss kg kg-1)
-    tmean_K:    mean temperature (tas, K)
-    psurf:      pressure (psurf, Pa),
-
-    """
-    for metric in ['huss', 'psurf', 'tas']:
-        if metric not in pettmp:
-            return
-
-    hurs = []
-    for tmean_K, psurf, spec_hum in zip(pettmp['tas'], pettmp['psurf'], pettmp['huss']):
-
-        # Clausius-Clapeyron equation
-        # ===========================
-        rltv_humid = 0.263 * psurf * spec_hum * (exp((17.67 * (tmean_K - tref)) / (tmean_K - 29.65))) ** -1
-
-        # for values greater than 100 or less than 0
-        # ===========================================
-        if rltv_humid > 100:
-            rltv_humid = 100
-        elif rltv_humid < 0:
-            rltv_humid = 0
-
-        hurs.append(rltv_humid)
-
-    pettmp['hurs'] = hurs
-
-    return
-
 def _make_meteo_csvs_from_chess(lggr, out_dir, nc_fnames_hist, nc_fnames_rcp, meteo_df, max_cells, rqrd_metrics):
     """
     read y/x indices from lookup table
     """
-    filterwarnings("error")
-
-    num_cells = len(meteo_df)
-    num_cells_str = format_string("%d", num_cells, grouping=True)
-    print('Coordinates mapping file has ' + num_cells_str + ' + records')
-
     nrth_min = meteo_df['northing'].min()
     nrth_max = meteo_df['northing'].max()
     east_min = meteo_df['easting'].min()
     east_max = meteo_df['easting'].max()
 
+    num_cells = len(meteo_df)
     max_cells = min(max_cells, num_cells)
 
-    metric_names = nc_fnames_hist.keys()
+    metric_names = set(list(nc_fnames_rcp.keys()) + list(nc_fnames_hist.keys()))    # required for update_progress_chess
     n_metrics = len(metric_names)
 
     # ===========================================================================
@@ -253,14 +187,24 @@ def _make_meteo_csvs_from_chess(lggr, out_dir, nc_fnames_hist, nc_fnames_rcp, me
                                                                                             round(lat,4), round(lon,4))
             icount += 1
 
+        # set flag for relative humidity
+        # ==============================
+        hurs_flag = True
+        for metric in ['huss', 'psurf', 'tas']:
+            if metric not in rqrd_metrics:
+                hurs_flag = False
+                break
+
         # stanza for relative humidity
         # ============================
-        # TODO: improve checking
-        _relative_humidity_calc(pettmp)
-        metric = 'hurs'
-        if metric in pettmp:
+        if hurs_flag:
+            _relative_humidity_calc(pettmp)  # create historic hurs data from tas, psurf and huss
+            metric = 'hurs'
             vals_rcp = vals_rcp_all[metric][:, yindx, xindx]
-            pettmp[metric] = pettmp[metric] + [float(val) for val in vals_rcp]
+            try:
+                pettmp[metric] += [float(val) for val in vals_rcp]
+            except UserWarning as warn:
+                valid_data_flag = False
 
         # write data for this grid point
         # ==============================
@@ -347,9 +291,47 @@ def read_chess_nc_write_meteo_csv(form):
                 print('Created ' + out_dir_plus)
 
             nbad_cells = _make_meteo_csvs_from_chess(form.lgr, out_dir_plus, nc_fnames_hist, nc_fnames_rcp,
-                                                                            meteo_df, max_cells, rqrd_metrics)
+                                                                meteo_df, max_cells, rqrd_metrics)
             mess = '\tN bad cells: {}'.format(nbad_cells)
             print('Completed met files for scenario ' + scenario + ' realisation ' + realisation + mess)
+
+    return
+
+def _make_bad_cell_mess(bad_cells_list, metric, yindx, xindx, lat, lon, mess):
+    """
+
+    """
+    mess += 'metric {}\tyindx, xindx: {}/{}\tlat, lon: {}/{}'.format(metric, yindx, xindx, lat, lon)
+    bad_cells_list.append(mess)
+    return
+
+def _relative_humidity_calc(pettmp, tref = 273.16):
+    """
+    purpose: use Clausius-Clapeyron equation to derive historic hurs data since RCP data for hurs is extant
+                 thanks to Jon Mccalmont <jon.mccalmont@abdn.ac.uk> for equation
+
+        spec_hum:   specific humidity (huss kg kg-1)    huss  - hist and rcp available    1440 values 120 yrs
+        tmean_K:    mean temperature (tas, K)           tas   - hist and rcp available    1440 values 120 yrs
+        psurf:      pressure (psurf, Pa)                psurf - hist only    available     684 values  57 yrs
+
+    """
+    hurs = []
+    for tmean_K, psurf, spec_hum in zip(pettmp['tas'], pettmp['psurf'], pettmp['huss']):
+
+        # Clausius-Clapeyron equation
+        # ===========================
+        rltv_humid = 0.263 * psurf * spec_hum * (exp((17.67 * (tmean_K - tref)) / (tmean_K - 29.65))) ** -1
+
+        # for values greater than 100 or less than 0
+        # ===========================================
+        if rltv_humid > 100:
+            rltv_humid = 100
+        elif rltv_humid < 0:
+            rltv_humid = 0
+
+        hurs.append(rltv_humid)
+
+    pettmp['hurs'] = hurs
 
     return
 
@@ -437,6 +419,20 @@ def _write_out_chess(writers, pettmp, yindx, xindx, lat, lon, bad_cells_list):
 
     return
 
+def _out_of_bounds_check(yindx, yindx_max, xindx, xindx_max, lat, lon):
+    """
+
+    """
+    if yindx > yindx_max or xindx > xindx_max:
+        mess = ERROR_STR + 'meteo dataframe index out of bounds - lat, yindx, max: '
+        mess += '{} {} {}\tlon, xindx, max: {} {} {}'.format(lat, yindx, yindx_max, lon, xindx, xindx_max)
+        print('\n' + mess)
+        out_of_bounds_flag = True
+    else:
+        out_of_bounds_flag = False
+
+    return  out_of_bounds_flag
+
 def _get_rcp_nc_files(settings, scenario, realisation, rqrd_metrics):
     """
 
@@ -461,3 +457,52 @@ def _get_rcp_nc_files(settings, scenario, realisation, rqrd_metrics):
                 break
 
     return nc_fnames
+
+def _fetch_valid_hist_rcp_data_orig(lggr, vals_hist_all, vals_rcp_all, metric, pettmp, yindx, xindx, lat, lon):
+    """
+    try initial location and if no valid data, then look in neighbouring cells using the lookup table
+    defined by ydsp and xdsp
+    """
+    ydsp = [0,  0, 1, 0, -1, -1,  1, 1, -1]
+    xdsp = [0, -1, 0, 1,  0, -1, -1, 1,  1]
+
+    vals_hist = None
+    vals_rcp = None
+
+    for ic in range(NSEARCH_PTS):
+        valid_data_flag = True
+        yindex = yindx + ydsp[ic]
+        xindex = xindx + xdsp[ic]
+
+        if not metric == 'hurs':        # no hurs historic dataset
+            vals_hist = vals_hist_all[:, yindex, xindex]
+            if vals_hist[0] is MaskedConstant:
+                valid_data_flag = False
+
+        if not metric == 'psurf':       # no psurf rcp dataset
+            vals_rcp = vals_rcp_all[:, yindex, xindex]
+            if vals_rcp[0] is MaskedConstant:
+                valid_data_flag = False
+
+        if valid_data_flag:
+            break
+
+    pettmp[metric] = []
+    if vals_hist is not None:
+        try:
+            pettmp[metric] = [float(val) for val in vals_hist]
+        except UserWarning as warn:
+            valid_data_flag = False
+
+    if vals_rcp is not None:
+        try:
+            pettmp[metric] += [float(val) for val in vals_rcp]
+        except UserWarning as warn:
+            valid_data_flag = False
+
+    if not valid_data_flag:
+        mess = WARN_STR + 'No valid data for metric {}\tyindx, xindx: {}/{}'.format(metric, yindx, xindx)
+        mess += '\tlat, lon: {}/{}'.format(lat, lon)
+        lggr.info(mess)
+
+    return valid_data_flag
