@@ -204,6 +204,7 @@ def _check_chess_wthr(sttngs):
     # lat_lon_osgb_fn = join(lookup_dir, 'meteo_lat_lon_osgb.csv')
     lat_lon_osgb_fn = join(lookup_dir, 'CHESS_hwsd_lkup_tble.csv')
     brit_osgb_fn = join(lookup_dir, 'BritishGrid_HWSD.csv')
+    fltr_cells_fn = join(lookup_dir, 'filter_cells_hwsd.csv')
 
     if not isdir(hist_dir) or not isdir(rcp_dir) or not isdir(lookup_dir) or not isfile(brit_osgb_fn):
         mess = WARN_STR + 'Check CHESS installation:\n\thistory dir: ' + hist_dir + '\n\tRCP dir: ' + rcp_dir
@@ -215,6 +216,7 @@ def _check_chess_wthr(sttngs):
     sttngs['chess_lkup'] = lookup_dir
     sttngs['lat_lon_osgb'] = lat_lon_osgb_fn
     sttngs['brit_osgb_fn'] = brit_osgb_fn
+    sttngs['fltr_cells_fn'] = fltr_cells_fn
 
     return
 

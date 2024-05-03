@@ -36,6 +36,49 @@ NRTHNG_MAX = 1056500
 
 # ===================================================
 #
+def remove_cells_from_hwsd(form):
+    """
+    create dataframe from BritishGrid_HWSD.csv
+    read log file comprising cells which have no CHESS data
+    remove these cells from the dataframe and save it as a new CSV file.
+    """
+    brit_osgb_fn = form.settings['brit_osgb_fn']
+    hwsd_df = read_csv(brit_osgb_fn)
+    nrecs = len(hwsd_df)
+    print('\nAOI HWSD file has {} records'.format(nrecs))
+
+    # read log file
+    # =============
+    fltr_cells_fn = form.settings['fltr_cells_fn']
+    with open(fltr_cells_fn, 'r') as fobj:
+        fltr_lines = fobj.readlines()
+
+    nrecs_rmv = len(fltr_lines) - 1
+    print('\nWill remove {} cells from new HWSD file'.format(nrecs_rmv))
+
+    eastings = []
+    nrthings = []
+
+    NREC_LIM = 999999999
+    for nline, line in enumerate(fltr_lines[1:]):
+        indices_str = line.split()[11]
+        yindx, xindx = indices_str.split('/')
+        easting = int(xindx) * 1000 - 500
+        nrthing = int(yindx) * 1000 - 500
+
+        eastings.append(easting)
+        nrthings.append(nrthing)
+
+    # remove cells
+    # ============
+    print('removed {} cells from dataframe'.format(len(nrthings)))
+
+    out_dir = form.w_lbl_out_dir.text()
+    if not isdir(out_dir):
+        mkdir(out_dir)
+
+    return
+
 def _make_lookup_from_hwsd_xlsx(form, aoi_df):
     """
     reorder aoi_df and add index Series

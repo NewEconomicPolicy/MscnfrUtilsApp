@@ -36,7 +36,7 @@ ERROR_STR = '*** Error *** '
 WARN_STR = '*** Warning *** '
 
 RQRD_METRICS = ['precip', 'hurs', 'huss', 'psurf', 'rsds', 'sfcWind', 'tasmax', 'tasmin', 'tas']    # 9
-RQRD_METRICS = ['hurs', 'huss', 'psurf', 'tas']
+# RQRD_METRICS = ['hurs', 'huss', 'psurf', 'tas']
 
 KELVIN_TO_CENTIGRADE = -273.15
 TAS_METRICS = ['tasmax', 'tasmin', 'tas']   # temperature at surface

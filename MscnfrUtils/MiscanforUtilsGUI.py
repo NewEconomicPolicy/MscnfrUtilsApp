@@ -25,7 +25,7 @@ from validate import check_soil_file
 from ukcp18_fns import generate_ukcp18_csv_files
 from hadley_NC_fns import generate_hadley_csv_files
 from mscnfr_utils_fns import reformat_csv_files, identify_ukcp18_dirs, identify_nc_files
-from hwsd_csv_to_osgb_lookup import write_lookup_from_hwsd_xlsx, write_osgb_meteogrid
+from hwsd_csv_to_osgb_lookup import write_lookup_from_hwsd_xlsx, write_osgb_meteogrid, remove_cells_from_hwsd
 
 from merge_pt2 import write_merge_pt2
 from chess_to_lookup_table_csv import write_lookup_csv, write_check_csv
@@ -319,6 +319,7 @@ class Form(QWidget):
         w_osgb_csv = QPushButton("Test meteogrid")
         helpText = 'Compress CHESS_hwsd_lkup_tble.csv'
         helpText = 'Write test meteogrid'
+        w_osgb_csv.setEnabled(False)
         w_osgb_csv.setToolTip(helpText)
         w_osgb_csv.setFixedWidth(STD_FLD_SIZE_120)
         w_osgb_csv.clicked.connect(self.genOsgbMeteogrid)
@@ -335,11 +336,29 @@ class Form(QWidget):
         w_exit.clicked.connect(self.exitClicked)
         grid.addWidget(w_exit, irow, 6)
 
+        # fourth command line for CHESS
+        # =============================
+        irow += 1
+        w_filter_hwsd = QPushButton("Filter HWSD")
+        helpText = 'Read BritishGrid_HWSD.csv and create copy with identified cells rmoved'
+        w_filter_hwsd.setToolTip(helpText)
+        w_filter_hwsd.setFixedWidth(STD_FLD_SIZE_120)
+        w_filter_hwsd.clicked.connect(self.removeCellsFromHwsd)
+        grid.addWidget(w_filter_hwsd, irow, 2)
+
         # reads and set values from last run
         # ==================================
         read_config_file(self)
 
     # ===================================================
+    def removeCellsFromHwsd(self):
+        """
+
+        """
+        remove_cells_from_hwsd(self)
+
+        return
+
     def genOsgbMeteogrid(self):
         """
         test coordinates only
