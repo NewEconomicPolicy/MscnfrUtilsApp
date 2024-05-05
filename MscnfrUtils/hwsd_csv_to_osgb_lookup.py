@@ -15,7 +15,8 @@ from os.path import isdir, join, split, splitext
 from os import mkdir
 from time import time
 
-from pandas import DataFrame, read_csv, read_excel
+from pandas import DataFrame, read_csv
+from numpy import nan
 
 from mscnfr_utils_fns import update_progress_hwsd
 from cvrtcoord import WGS84toOSGB36, OSGB36toWGS84
@@ -71,11 +72,32 @@ def remove_cells_from_hwsd(form):
 
     # remove cells
     # ============
-    print('removed {} cells from dataframe'.format(len(nrthings)))
+    drop_list = []
+    for nrthing, easting in zip(nrthings, eastings):
+        drop_list += hwsd_df[(hwsd_df['BNG_X'] == easting) & (hwsd_df['BNG_Y'] == nrthing)].index.tolist()
 
+    hwsd_df.drop(hwsd_df.index[drop_list], axis=0, inplace=True)
+    print('removed {} cells'.format(len(drop_list)))
+
+    # write result
+    # ============
     out_dir = form.w_lbl_out_dir.text()
     if not isdir(out_dir):
         mkdir(out_dir)
+
+    short_fn = split(brit_osgb_fn)[1]
+    out_fn = join(out_dir, short_fn)
+    print('Writing ' + out_fn + '...')
+    hwsd_df.to_csv(out_fn, float_format='%.3f', na_rep=nan, sep=',', index=False)
+
+    # time consuming
+    # ==============
+    write_xlsx_flag = False
+    if write_xlsx_flag:
+        root_fn = splitext(short_fn)[0]
+        out_fn_xlsx = join(out_dir, root_fn + '_filtered.xlsx')
+        print('Writing ' + out_fn_xlsx + '...')
+        hwsd_df.to_excel(out_fn_xlsx, float_format='%.3f', na_rep='NA', index=False)
 
     return
 
