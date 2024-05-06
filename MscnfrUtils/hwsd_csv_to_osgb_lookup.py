@@ -11,7 +11,7 @@ __prog__ = 'ukcp18_fns.py'
 __version__ = '0.0.0'
 __author__ = 's03mm5'
 
-from os.path import isdir, join, split, splitext
+from os.path import isdir, isfile, join, split, splitext
 from os import mkdir
 from time import time
 
@@ -23,12 +23,9 @@ from cvrtcoord import WGS84toOSGB36, OSGB36toWGS84
 from mscnfr_osgb_fns import open_file_sets_osgb, write_mscnfr_out
 
 ERROR_STR = '*** Error *** '
+WARN_STR = '*** Warning *** '
 
 numSecsDay = 3600*24
-
-HWSD_CSV_FNAME = 'E:\\GlobalEcosseData\\Hwsd_CSVs\\UK\\vault\\Wales_hwsd.csv'
-HWSD_CSV_FNAME =  'E:\\GlobalEcosseData\\Hwsd_CSVs\\UK\\GBR_hwsd.csv'
-LKUP_TBL_FN = 'G:\\MiscanforData\\All_outputs\\chess\\CHESS_hwsd_lkup_tble.csv'
 
 AOI_HEADERS = ['gran_lat', 'gran_lon', 'mu_global', 'lat', 'lon']
 
@@ -153,17 +150,21 @@ def write_lookup_from_hwsd_xlsx(form):
 
 def write_osgb_meteogrid(form):
     """
-
+# TODO: write sorted list
     """
+    lkup_tbl_fn = join(form.settings['chess_lkup'], 'CHESS_hwsd_lkup_tble.csv')
+    if isfile(lkup_tbl_fn):
+        lkup_df = read_csv(lkup_tbl_fn)
+    else:
+        print(WARN_STR + 'HWSD lookup file ' + lkup_tbl_fn + ' does not exist')
+        return
 
-    # TODO: write sorted list
-    lkup_df = read_csv(LKUP_TBL_FN)
-    lkup_fltr_df = lkup_df[lkup_df.duplicated(['nrthng_indx', 'estng_indx'])]
+    lkup_fltr_df = lkup_df[lkup_df.duplicated(['yindx', 'xindx'])]
     ncells = len(lkup_fltr_df)
-    print('Lookup dataframe created from ' + LKUP_TBL_FN + ' with length {}'.format(ncells))
+    print('Lookup dataframe created from ' + lkup_tbl_fn + ' with length {}'.format(ncells))
 
     var_names = []
-    out_dir = split(LKUP_TBL_FN)[0]
+    out_dir = split(lkup_tbl_fn)[0]
     miscan_fobjs, writers = open_file_sets_osgb(var_names + ['meteogrid'], out_dir)
 
     pettmp = {}
@@ -219,8 +220,9 @@ def write_lookup_from_hwsd_csv(form):
     """
 
     """
-    # hwsd_df = HWSD_mu_globals_csv(form, HWSD_CSV_FNAME)
-    aoi_df = read_csv(HWSD_CSV_FNAME, sep=',', names=AOI_HEADERS)
+    hwsd_csv_fname = join(form.settings['weather_dir'], 'Hwsd_CSVs\\UK\\vault\\Wales_hwsd.csv')
+    hwsd_csv_fname = join(form.settings['weather_dir'], 'Hwsd_CSVs\\UK\\GBR_hwsd.csv')
+    aoi_df = read_csv(hwsd_csv_fname, sep=',', names=AOI_HEADERS)
     nrecs = len(aoi_df)
     print('\nAOI HWSD file has {} records'.format(nrecs))
 

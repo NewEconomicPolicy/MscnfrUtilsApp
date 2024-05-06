@@ -5,7 +5,7 @@
 # Created:     16/12/2015
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
-#!/usr/bin/env python
+#
 
 __prog__ = 'MiscanforUtilsGUI.py'
 __version__ = '0.0.1'
@@ -17,7 +17,7 @@ import sys
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtWidgets import (QLabel, QWidget, QApplication, QHBoxLayout, QVBoxLayout, QGridLayout, QLineEdit,
-                                QComboBox, QPushButton, QCheckBox, QFileDialog)
+                                                                     QComboBox, QPushButton, QCheckBox, QFileDialog)
 
 from initialise_mscnfr_utils import read_config_file, initiation, write_config_file
 from cru_NC_fns import generate_cru_csv_files, check_csv_file
@@ -242,6 +242,7 @@ class Form(QWidget):
         irow += 1
         w_create_file = QPushButton("Generate CSV files")
         helpText = 'Generate a new Miscanfor CSV formatted metric and meteogrid files from NetCDF or CSV files'
+        helpText += '\n\tuses selection from CSV conversion drop down'
         w_create_file.setToolTip(helpText)
         w_create_file.setFixedWidth(STD_FLD_SIZE_120)
         w_create_file.clicked.connect(self.genCsvFilesClicked)
@@ -265,6 +266,7 @@ class Form(QWidget):
 
         w_reform_csv = QPushButton("Reformat CSVs")
         helpText = 'Read list of HWSD files and write lat, long, mu_global files for Miscanfor'
+        helpText += '\n\tuses module mscnfr_utils_fns'
         w_reform_csv.setToolTip(helpText)
         w_reform_csv.clicked.connect(self.reformatCsvFilesClicked)
         grid.addWidget(w_reform_csv, irow, 4)
@@ -295,7 +297,9 @@ class Form(QWidget):
         # ============================
         irow += 1
         w_cvrtcoord = QPushButton("Check OSGB to WGS84")
-        helpText = 'Test cvrtcoord.py'
+        helpText = 'Test Hannah Fry Python module to convert OSGB eastings and northings '
+        helpText += '\nto the World Geodetic System (WGS) lon/lat coordinate system and vice-versa.'
+        helpText += '\nCreates an output file: cvrtcoord.csv'
         w_cvrtcoord.setToolTip(helpText)
         w_cvrtcoord.setFixedWidth(STD_FLD_SIZE_120)
         w_cvrtcoord.clicked.connect(self.checkCvrtCoord)
@@ -319,7 +323,7 @@ class Form(QWidget):
         w_osgb_csv = QPushButton("Test meteogrid")
         helpText = 'Compress CHESS_hwsd_lkup_tble.csv'
         helpText = 'Write test meteogrid'
-        w_osgb_csv.setEnabled(False)
+        # w_osgb_csv.setEnabled(False)
         w_osgb_csv.setToolTip(helpText)
         w_osgb_csv.setFixedWidth(STD_FLD_SIZE_120)
         w_osgb_csv.clicked.connect(self.genOsgbMeteogrid)

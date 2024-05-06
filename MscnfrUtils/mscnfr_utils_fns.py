@@ -26,6 +26,7 @@ timeElapsed = 2
 OUT_DELIM = ','
 HADLEY_SETS_MAPPED = {'pr': 'prAdjust', 'rlds': 'rldsAdjust', 'rsds': 'rsdsAdjust', 'tasmin': 'tasmin',
                       'tasmax': 'tasmax', 'monthly_wind': 'windAdjust'}
+WARN_STR = '*** Warning *** '
 '''
 from geopandas import GeoDataFrame
 from numpy import array
@@ -176,15 +177,17 @@ def identify_ukcp18_dirs(form, prefix = 'Perturbations: '):
     return prefix + pstr.rstrip(', ')
 
 def reformat_csv_files(form):
+    """
 
+    """
     func_name =  __prog__ + ' reformat_csv_files'
     print('In function ' + func_name)
 
     max_num_cells = int(form.w_max_cells.text())
 
     num_created = 0
-    root_dir = 'E:\\GlobalEcosseData\\Hwsd_CSVs'
-    dump_dir = 'E:\\Miscanfor\\Hwsd_CSVs'
+    root_dir = join(form.settings['weather_dir'], 'Hwsd_CSVs')
+    dump_dir = form.settings['mscnfr_dump_dir']
     country_list = list(['North_Korea','South_Korea','Taiwan','Japan','China'])
 
     for country in country_list:
@@ -194,7 +197,7 @@ def reformat_csv_files(form):
             remove(out_fname)
 
         if not isfile(out_fname):
-            print(out_fname + ' does not exist')
+            print(WARN_STR + out_fname + ' does not exist')
             continue
 
         fname_obj = open(out_fname, 'w', newline='')

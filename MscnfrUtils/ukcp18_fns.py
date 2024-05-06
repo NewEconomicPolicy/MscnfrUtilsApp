@@ -5,7 +5,7 @@
 # Created:     22/03/2020
 # Description:
 #-------------------------------------------------------------------------------
-#!/usr/bin/env python
+#
 
 __prog__ = 'ukcp18_fns.py'
 __version__ = '0.0.0'
@@ -25,10 +25,8 @@ from numpy import ma, float64
 from locale import setlocale, format_string, LC_ALL
 setlocale(LC_ALL, '')
 
-from mscnfr_utils_fns import open_file_sets_cru, update_progress_ukcp18, get_block_ref, update_progress_post,\
-                                                                                            find_grid_resolution
-HWSD_FNAME = 'E:\\GlobalEcosseData\\Hwsd_CSVs\\UK\\UK_hwsd.csv'
-
+from mscnfr_utils_fns import (open_file_sets_cru, update_progress_ukcp18, get_block_ref, update_progress_post,
+                                                                                            find_grid_resolution)
 NGRANULARITY = 120
 NLINES_PER_BLOCK = 114
 MAX_PERTURBS  = 1000
@@ -143,6 +141,8 @@ def generate_ukcp18_csv_files(form):
     """
     func_name =  __prog__ + ' generate_ukcp18_csv_files'
 
+    hwsd_fn = join(form.settings['weather_dir'], 'Hwsd_CSVs\\UK\\UK_hwsd.csv')
+
     # preliminary checks
     # ==================
     ukcp18_dir = form.w_lbl_ukcp18.text()
@@ -181,7 +181,7 @@ def generate_ukcp18_csv_files(form):
     this_block, nblocks, start_year, end_year, northing_keys, easting_keys = \
                                                                         _fetch_nrthng_and_eastng_keys(dirname, perturb)
 
-    meteo_df = _generate_meteogrid(HWSD_FNAME, cnvrtd_coords_fname, meteo_fname, northing_keys, easting_keys)
+    meteo_df = _generate_meteogrid(hwsd_fn, cnvrtd_coords_fname, meteo_fname, northing_keys, easting_keys)
     meteo_df['elevation'] = _fetch_ukcp18_elevations(uk_coords_dir, out_dir, meteo_df)
 
     # set limits

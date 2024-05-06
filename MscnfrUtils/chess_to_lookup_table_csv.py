@@ -35,7 +35,7 @@ def _write_check_csv(out_dir, chess_nc_fn, settings, max_cells):
     """
 
     """
-    out_fn = 'E:\\GlobalEcosseData\\CHESS_historic\\staging_dir\\cvrtcoord.csv'
+    out_fn = join(out_dir, 'cvrtcoord.csv')
 
     nc_dset = Dataset(chess_nc_fn, mode='r')
     if 'x' not in nc_dset.variables:
@@ -99,7 +99,7 @@ def _write_check_csv(out_dir, chess_nc_fn, settings, max_cells):
             if num_vals > max_cells:
                 break
 
-        if num_vals > max_cells:
+        if num_vals >= max_cells:
             print('\nnumber of vals: {}\texceeds requested: {}'.format(num_vals, max_cells))
             break
 
@@ -139,7 +139,7 @@ def write_check_csv(form):
 
     # preliminary checks
     # ==================
-    nc_dir = 'E:\\GlobalEcosseData\\CHESS_historic\\Monthly'
+    nc_dir = join(form.settings['weather_dir'],'CHESS_historic\\Monthly')
     nc_fnames = glob(nc_dir + '/*.nc')
     if len(nc_fnames) == 0:
         print('No NC files found')
