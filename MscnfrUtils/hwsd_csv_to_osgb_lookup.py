@@ -48,6 +48,10 @@ def remove_cells_from_hwsd(form):
     # read log file
     # =============
     fltr_cells_fn = form.settings['fltr_cells_fn']
+    if not isfile(fltr_cells_fn):
+        print(WARN_STR, 'File ' + fltr_cells_fn + ' must exist')
+        return
+
     with open(fltr_cells_fn, 'r') as fobj:
         fltr_lines = fobj.readlines()
 

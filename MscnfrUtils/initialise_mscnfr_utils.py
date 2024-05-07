@@ -59,7 +59,7 @@ def _read_setup_file(program_id):
             with open(setup_file, 'r') as fsetup:
                 setup = json_load(fsetup)
         except (OSError, IOError) as err:
-                print(err)
+                print(str(err))
                 sleep(sleepTime)
                 sys.exit(0)
     else:
