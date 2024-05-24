@@ -37,6 +37,7 @@ WARN_STR = '*** Warning *** '
 
 RQRD_METRICS = ['precip', 'hurs', 'huss', 'psurf', 'rsds', 'sfcWind', 'tasmax', 'tasmin', 'tas']    # 9
 # RQRD_METRICS = ['hurs', 'huss', 'psurf', 'tas']
+# RQRD_METRICS = ['precip']
 
 KELVIN_TO_CENTIGRADE = -273.15
 TAS_METRICS = ['tasmax', 'tasmin', 'tas']   # temperature at surface
@@ -47,9 +48,9 @@ GRID_SIZE = 1000
 numSecsDay = 3600*24
 
 SCENARIOS = ['rcp60', 'rcp45', 'rcp26', 'rcp85']
-SCENARIOS = ['rcp26']
+# SCENARIOS = ['rcp26']
 REALISATIONS = ['01', '04', '06', '15']
-REALISATIONS = ['01']
+# REALISATIONS = ['01']
 
 NSEARCH_PTS = 1     # do not exceed maximum of 9 in function _fetch_valid_hist_rcp_data
 
@@ -182,10 +183,14 @@ def _make_meteo_csvs_from_chess(lggr, out_dir, nc_fnames_hist, nc_fnames_rcp, me
                                                                             metric, pettmp, yindx, xindx, lat, lon)
             if not valid_data_flag:
                 nmasked += 1
+                break
 
             last_time = update_progress_chess(last_time, num_set, icount, nbad_cells, num_total,
                                                                                             round(lat,4), round(lon,4))
             icount += 1
+
+        if not valid_data_flag:
+            continue
 
         # set flag for relative humidity
         # ==============================

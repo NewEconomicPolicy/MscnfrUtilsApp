@@ -93,7 +93,7 @@ def remove_cells_from_hwsd(form):
 
     # time consuming
     # ==============
-    write_xlsx_flag = False
+    write_xlsx_flag = True
     if write_xlsx_flag:
         root_fn = splitext(short_fn)[0]
         out_fn_xlsx = join(out_dir, root_fn + '_filtered.xlsx')
