@@ -35,10 +35,6 @@ from mscnfr_osgb_fns import open_file_sets_osgb
 ERROR_STR = '*** Error *** '
 WARN_STR = '*** Warning *** '
 
-RQRD_METRICS = ['precip', 'hurs', 'huss', 'psurf', 'rsds', 'sfcWind', 'tasmax', 'tasmin', 'tas']    # 9
-# RQRD_METRICS = ['hurs', 'huss', 'psurf', 'tas']
-# RQRD_METRICS = ['precip']
-
 KELVIN_TO_CENTIGRADE = -273.15
 TAS_METRICS = ['tasmax', 'tasmin', 'tas']   # temperature at surface
 
@@ -47,10 +43,14 @@ GRID_SIZE = 1000
 
 numSecsDay = 3600*24
 
+#RQRD_METRICS = ['precip']
+#SCENARIOS = ['rcp26']
+#REALISATIONS = ['01']
+
+RQRD_METRICS = ['precip', 'hurs', 'huss', 'psurf', 'rsds', 'sfcWind', 'tasmax', 'tasmin', 'tas']  # 9
+# RQRD_METRICS = ['hurs', 'huss', 'psurf', 'tas']
 SCENARIOS = ['rcp60', 'rcp45', 'rcp26', 'rcp85']
-# SCENARIOS = ['rcp26']
 REALISATIONS = ['01', '04', '06', '15']
-# REALISATIONS = ['01']
 
 NSEARCH_PTS = 1     # do not exceed maximum of 9 in function _fetch_valid_hist_rcp_data
 
@@ -90,6 +90,7 @@ def _fetch_valid_hist_rcp_data(lggr, vals_hist_all, vals_rcp_all, metric, pettmp
     if vals_rcp is not None:
         try:
             pettmp[metric] += [float(val) for val in vals_rcp]
+            pettmp[metric] += [float(vals_rcp[-1])]     # fudge due to CHESS incompleteness
         except UserWarning as warn:
             valid_data_flag = False
 
@@ -133,7 +134,7 @@ def _make_meteo_csvs_from_chess(lggr, out_dir, nc_fnames_hist, nc_fnames_rcp, me
         else:
             t1 = time()
             nc_dset = Dataset(nc_fnames_hist[metric])
-            vals_hist_all[metric] = nc_dset.variables[metric][:-1, :, :]
+            vals_hist_all[metric] = nc_dset.variables[metric][:240, :, :]
             nc_dset.close()
 
             t2 = time()
@@ -154,7 +155,7 @@ def _make_meteo_csvs_from_chess(lggr, out_dir, nc_fnames_hist, nc_fnames_rcp, me
             vals_rcp_all[metric] = None
         else:
             nc_dset_rcp = Dataset(nc_fnames_rcp[metric])
-            vals_rcp_all[metric] = nc_dset_rcp.variables[var_name][444:, :, :]
+            vals_rcp_all[metric] = nc_dset_rcp.variables[var_name][1:, :, :]
             nc_dset_rcp.close()
 
             t3 = time()
