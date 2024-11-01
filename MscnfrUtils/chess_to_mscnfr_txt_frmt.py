@@ -43,17 +43,17 @@ GRID_SIZE = 1000
 
 numSecsDay = 3600*24
 
-#RQRD_METRICS = ['precip']
-#SCENARIOS = ['rcp26']
-#REALISATIONS = ['01']
+# RQRD_METRICS = ['precip']
+# SCENARIOS = ['rcp26']
+# REALISATIONS = ['01']
 
-# RQRD_METRICS = ['precip', 'hurs', 'huss', 'psurf', 'rsds', 'sfcWind', 'tasmax', 'tasmin', 'tas']  # 9
-# SCENARIOS = ['rcp60', 'rcp45', 'rcp26', 'rcp85']
-# REALISATIONS = ['01', '04', '06', '15']
+RQRD_METRICS = ['precip', 'hurs', 'huss', 'psurf', 'rsds', 'sfcWind', 'tasmax', 'tasmin', 'tas']  # 9
+SCENARIOS = ['rcp60', 'rcp45', 'rcp26', 'rcp85']
+REALISATIONS = ['01', '04', '06', '15']
 
-RQRD_METRICS = ['hurs', 'huss', 'precip', 'psurf', 'tas']
-SCENARIOS = ['rcp85']
-REALISATIONS = ['01']
+# RQRD_METRICS = ['hurs', 'huss', 'precip', 'psurf', 'tas']
+# SCENARIOS = ['rcp85']
+# REALISATIONS = ['01']
 
 NSEARCH_PTS = 1     # do not exceed maximum of 9 in function _fetch_valid_hist_rcp_data
 
