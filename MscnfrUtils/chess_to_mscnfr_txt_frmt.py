@@ -47,10 +47,13 @@ numSecsDay = 3600*24
 #SCENARIOS = ['rcp26']
 #REALISATIONS = ['01']
 
-RQRD_METRICS = ['precip', 'hurs', 'huss', 'psurf', 'rsds', 'sfcWind', 'tasmax', 'tasmin', 'tas']  # 9
-# RQRD_METRICS = ['hurs', 'huss', 'psurf', 'tas']
-SCENARIOS = ['rcp60', 'rcp45', 'rcp26', 'rcp85']
-REALISATIONS = ['01', '04', '06', '15']
+# RQRD_METRICS = ['precip', 'hurs', 'huss', 'psurf', 'rsds', 'sfcWind', 'tasmax', 'tasmin', 'tas']  # 9
+# SCENARIOS = ['rcp60', 'rcp45', 'rcp26', 'rcp85']
+# REALISATIONS = ['01', '04', '06', '15']
+
+RQRD_METRICS = ['hurs', 'huss', 'precip', 'psurf', 'tas']
+SCENARIOS = ['rcp85']
+REALISATIONS = ['01']
 
 NSEARCH_PTS = 1     # do not exceed maximum of 9 in function _fetch_valid_hist_rcp_data
 
@@ -205,12 +208,14 @@ def _make_meteo_csvs_from_chess(lggr, out_dir, nc_fnames_hist, nc_fnames_rcp, me
         # ============================
         if hurs_flag:
             _relative_humidity_calc(pettmp)  # create historic hurs data from tas, psurf and huss
+            '''
             metric = 'hurs'
             vals_rcp = vals_rcp_all[metric][:, yindx, xindx]
             try:
                 pettmp[metric] += [float(val) for val in vals_rcp]
             except UserWarning as warn:
                 valid_data_flag = False
+            '''
 
         # write data for this grid point
         # ==============================
@@ -337,7 +342,7 @@ def _relative_humidity_calc(pettmp, tref = 273.16):
 
         hurs.append(rltv_humid)
 
-    pettmp['hurs'] = hurs
+    pettmp['hurs'] = hurs + pettmp['hurs']
 
     return
 
